@@ -23,6 +23,19 @@
 
 (define insp (current-inspector)) ; for all opaque structures
 
+(require (for-syntax syntax/srcloc))
+(define send-stats (make-hash))
+(struct statistic (hits misses weaks) #:mutable #:transparent)
+(provide dump-send-statistics)
+
+(define (dump-send-statistics)
+  (write 'dump-send-statistics)
+  (newline)
+  (hash-for-each send-stats
+		 (lambda (k v)
+		   (write (list k v))
+		   (newline))))
+
 ;;--------------------------------------------------------------------
 ;;  spec for external interface
 ;;--------------------------------------------------------------------
@@ -3734,14 +3747,34 @@
   (let ()
     
     (define (do-method traced? stx form obj name args rest-arg?)
-      (with-syntax ([(sym method receiver)
-                     (generate-temporaries (syntax (1 2 3)))])
+      (with-syntax ([(sym method receiver receiver-class state)
+                     (generate-temporaries (syntax (1 2 3 4 5)))]
+                    [*cached-state*
+                     (syntax-local-lift-expression
+                      (syntax (make-weak-box (cons #f #f))))]
+		    [stx-location-string (source-location->string stx)])
         (quasisyntax/loc stx
           (let*-values ([(sym) (quasiquote (unsyntax (localize name)))]
-                        [(method receiver)
-                         (find-method/who '(unsyntax form)
-                                          (unsyntax obj)
-                                          sym)])
+                        [(receiver) (unsyntax obj)]
+                        [(receiver-class) (object-ref receiver)]
+                        [(state) (weak-box-value *cached-state*)]
+                        [(method)
+			 (let* ((sendloc stx-location-string)
+				(st (hash-ref! send-stats sendloc
+					       (lambda () (statistic 0 0 0)))))
+			   (if (and state (eq? (car state) receiver-class))
+			       (begin
+				 (set-statistic-hits! st (+ (statistic-hits st) 1))
+				 (cdr state))
+			       (let-values ([(method ignored-receiver)
+					     (find-method/who '(unsyntax form)
+							      receiver
+							      sym)])
+				 (if state
+				     (set-statistic-misses! st (+ (statistic-misses st) 1))
+				     (set-statistic-weaks! st (+ (statistic-weaks st) 1)))
+				 (set! *cached-state* (make-weak-box (cons receiver-class method)))
+				 method)))])
             (unsyntax
              (make-method-call
               traced?
