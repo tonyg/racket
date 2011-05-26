@@ -31,7 +31,7 @@ ARLIBFLAGS = @LDFLAGS@ $(LIBS)
 
 DEF_COLLECTS_DIR = +D INITIAL_COLLECTS_DIRECTORY='"'"`cd $(srcdir)/../../../collects; pwd`"'"'
 
-XFORM_SETUP = ../racket@CGC@ -cqu $(srcdir)/xform.rkt --setup .
+XFORM_SETUP = $(HOST_RACKET_BUILD_ROOT)/racket/racket@CGC@ -cqu $(srcdir)/xform.rkt --setup .
 XFORM_NOPRECOMP = $(XFORM_SETUP) --cpp "$(CPP) $(CPPFLAGS)" @XFORMFLAGS@ -o
 XSRCDIR = xsrc
 XFORM = env XFORM_USE_PRECOMP=$(XSRCDIR)/precomp.h $(XFORM_NOPRECOMP)
