@@ -25,6 +25,8 @@ ALLDIRINFO = "$(DESTDIR)$(bindir)" \
              "$(DESTDIR)$(libpltdir)" \
              "$(DESTDIR)$(mandir)"
 
+HOST_RACKET_BUILD_ROOT = .
+
 all:
 	$(MAKE) @MAIN_VARIANT@
 
@@ -105,7 +107,7 @@ no-run:
 	$(NOOP)
 
 copytree-run:
-	racket/racket@CGC@ -u \
+	$(HOST_RACKET_BUILD_ROOT)/racket/racket@CGC@ -u \
           "$(srcdir)/../collects/setup/unixstyle-install.rkt" \
           make-install-copytree "$(srcdir)/.." \
           $(ALLDIRINFO) "@INSTALL_ORIG_TREE@"
@@ -118,7 +120,7 @@ install-no-post-collects:
 
 fix-paths:
 	if [ "$(DESTDIR)" != "" ]; then \
-          racket/racket@CGC@ -u \
+          $(HOST_RACKET_BUILD_ROOT)/racket/racket@CGC@ -u \
             "$(srcdir)/../collects/setup/unixstyle-install.rkt" \
             make-install-destdir-fix "$(srcdir)/.." \
             $(ALLDIRINFO) "@INSTALL_ORIG_TREE@"; \
@@ -134,7 +136,7 @@ install-3m-common:
 
 install-3m:
 	$(MAKE) install-3m-common
-	$(WITH_ENV_VARS) racket/racket@MMM@ $(SETUP_ARGS)
+	$(WITH_ENV_VARS) $(HOST_RACKET_BUILD_ROOT)/racket/racket@MMM@ $(SETUP_ARGS)
 	$(MAKE) install-common-last
 
 plain-install-3m:
@@ -157,7 +159,7 @@ install-cgc-common:
 
 install-cgc:
 	$(MAKE) install-cgc-common
-	$(WITH_ENV_VARS) racket/racket@CGC@ $(SETUP_ARGS)
+	$(WITH_ENV_VARS) $(HOST_RACKET_BUILD_ROOT)/racket/racket@CGC@ $(SETUP_ARGS)
 	$(MAKE) install-common-last
 
 plain-install-cgc:
@@ -180,7 +182,7 @@ install-both-common:
 
 install-both:
 	$(MAKE) install-both-common
-	$(WITH_ENV_VARS) racket/racket@MAIN_VARIANT@ $(SETUP_ARGS)
+	$(WITH_ENV_VARS) $(HOST_RACKET_BUILD_ROOT)/racket/racket@MAIN_VARIANT@ $(SETUP_ARGS)
 	$(MAKE) install-common-last
 
 plain-install-both:

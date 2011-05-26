@@ -32,6 +32,8 @@ ARLIBFLAGS = @LDFLAGS@ @LIBS@
 
 MZSRC = $(srcdir)/src
 
+HOST_RACKET_BUILD_ROOT = ..
+
 FOREIGN_DIR = ../foreign
 FOREIGN_OBJ = $(FOREIGN_DIR)/foreign.@LTO@
 LIBFFI_OBJ_ON = $(FOREIGN_DIR)/libffi/src/*.@LTO@ $(FOREIGN_DIR)/libffi/src/*/*.@LTO@
@@ -220,17 +222,17 @@ total_startup:
 	$(MAKE) cgc
 
 headers:
-	./racket@CGC@ -cqu $(srcdir)/mkincludes.rkt "$(DESTDIR)$(includepltdir)" "$(srcdir)" .
+	$(HOST_RACKET_BUILD_ROOT)/racket/racket@CGC@ -cqu $(srcdir)/mkincludes.rkt "$(DESTDIR)$(includepltdir)" "$(srcdir)" .
 
 $(srcdir)/src/schexn.h: $(srcdir)/src/makeexn
-	./racket@CGC@ -um $(srcdir)/src/makeexn > $(srcdir)/src/schexn.h
+	$(HOST_RACKET_BUILD_ROOT)/racket/racket@CGC@ -um $(srcdir)/src/makeexn > $(srcdir)/src/schexn.h
 $(collectsdir)/scheme/private/kernstruct.rkt: $(srcdir)/src/makeexn
-	./racket@CGC@ -um $(srcdir)/src/makeexn kernstruct $(collectsdir)/scheme/private/kernstruct.rkt
+	$(HOST_RACKET_BUILD_ROOT)/racket/racket@CGC@ -um $(srcdir)/src/makeexn kernstruct $(collectsdir)/scheme/private/kernstruct.rkt
 
 $(srcdir)/src/$(STARTUPDEST): $(srcdir)/src/startup.rktl $(srcdir)/src/sstoinct.rkt
 	racket -cu $(srcdir)/src/sstoinct.rkt < $(srcdir)/src/startup.rktl > $(srcdir)/src/$(STARTUPDEST) 
 $(srcdir)/src/$(CSTARTUPDEST): $(srcdir)/src/startup.rktl $(srcdir)/src/schvers.h $(srcdir)/src/schminc.h
-	./racketcgc -cu $(srcdir)/src/sstoinc.rkt $(CSTARTUPEXTRA) $(srcdir)/src/$(CSTARTUPDEST) < $(srcdir)/src/startup.rktl 
+	$(HOST_RACKET_BUILD_ROOT)/racket/racketcgc -cu $(srcdir)/src/sstoinc.rkt $(CSTARTUPEXTRA) $(srcdir)/src/$(CSTARTUPDEST) < $(srcdir)/src/startup.rktl 
 
 mark:
 	racket -cu $(srcdir)/src/mkmark.rkt $(srcdir)/src < $(srcdir)/src/mzmarksrc.c
@@ -291,7 +293,7 @@ unix-install:
 	cd ..; rm -f "$(DESTDIR)$(bindir)/racket@MMM_INSTALLED@"
 	cd ..; cp racket/starter "$(DESTDIR)$(libpltdir)/starter"
 	cd ..; $(STRIP_DEBUG) "$(DESTDIR)$(libpltdir)/starter"
-	./racket@CGC@ -cu "$(srcdir)/collects-path.rkt" "$(DESTDIR)$(libpltdir)/starter" @COLLECTS_PATH@
+	$(HOST_RACKET_BUILD_ROOT)/racket/racket@CGC@ -cu "$(srcdir)/collects-path.rkt" "$(DESTDIR)$(libpltdir)/starter" @COLLECTS_PATH@
 	cd ..; echo 'CC=@CC@' > "$(BUILDINFO)"
 	cd ..; echo 'CFLAGS=@CFLAGS@ @PREFLAGS@ @COMPFLAGS@' >> "$(BUILDINFO)"
 	cd ..; echo 'OPTIONS=@OPTIONS@' >> "$(BUILDINFO)"
@@ -304,7 +306,7 @@ unix-install-cgc:
 	cd ..; $(ICP) racket/libracket.@LIBSFX@ "$(DESTDIR)$(libdir)/libracket.@LIBSFX@"
 	cd ..; $(ICP) racket/racket@CGC@ "$(DESTDIR)$(bindir)/racket@CGC_INSTALLED@"
 	cd ..; cp racket/mzdyn.o "$(DESTDIR)$(libpltdir)/mzdyn.o"
-	./racket@CGC@ -cu "$(srcdir)/collects-path.rkt" "$(DESTDIR)$(bindir)/racket@CGC_INSTALLED@@EXE_SUFFIX@" @COLLECTS_PATH@
+	$(HOST_RACKET_BUILD_ROOT)/racket/racket@CGC@ -cu "$(srcdir)/collects-path.rkt" "$(DESTDIR)$(bindir)/racket@CGC_INSTALLED@@EXE_SUFFIX@" @COLLECTS_PATH@
 
 unix-install-cgc-final:
 	$(NOOP)
@@ -313,7 +315,7 @@ unix-install-3m:
 	cd ..; $(ICP) racket/racket@MMM@ "$(DESTDIR)$(bindir)/racket@MMM_INSTALLED@"
 	cd ..; $(ICP) racket/libracket3m.@LIBSFX@ "$(DESTDIR)$(libdir)/libracket3m.@LIBSFX@"
 	cd ..; $(ICP) racket/mzdyn3m.o "$(DESTDIR)$(libpltdir)/mzdyn3m.o"
-	./racket@MMM@ -cu "$(srcdir)/collects-path.rkt" "$(DESTDIR)$(bindir)/racket@MMM_INSTALLED@@EXE_SUFFIX@" @COLLECTS_PATH@
+	$(HOST_RACKET_BUILD_ROOT)/racket/racket@MMM@ -cu "$(srcdir)/collects-path.rkt" "$(DESTDIR)$(bindir)/racket@MMM_INSTALLED@@EXE_SUFFIX@" @COLLECTS_PATH@
 
 unix-install-3m-final:
 	$(NOOP)
