@@ -147,6 +147,18 @@ MZ_INLINE uint32_t mzrt_atomic_add_32(volatile unsigned int *counter, unsigned i
       : "0" (value), "m" (*counter)
       : "memory", "cc");
   return value;
+#elif defined (__GNUC__) && defined(__mips__)
+  unsigned int tmp;
+
+  asm volatile (
+    "1:ll %0,0(%1)\n" /* load linked */
+    "addu %0,%0,%2\n" /* add the delta to the read value */
+    "sc %0,0(%1)\n" /* store conditional */
+    "beqz %0,1b\n" /* on failure, retry */
+    "nop\n" /* branch delay slot */
+    : "=&r"(tmp)
+    : "r"(counter), "r"(value)
+    : "memory", "cc");
 #else
 #error !!!Atomic ops not provided!!!
 #endif
