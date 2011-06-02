@@ -166,6 +166,24 @@ static MZ_INLINE int mzrt_cas(volatile size_t *addr, size_t old, size_t new_val)
 
   return result;
 #  endif
+# elif defined(__mips__)
+  size_t oldval;
+  int result = 0;
+
+  __asm__ __volatile__(
+    "1:ll %0,0(%2)\n" /* load linked */
+    "bne %0,%4,2f\n" /* if no match, branch forward */
+    "move %1,%3\n" /* otherwise, copy newval because sc will clobber its Rd */
+    "sc %1,0(%2)\n" /* store conditional */
+    "beqz %1,1b\n" /* on failure, retry */
+    "nop\n" /* branch delay slot */
+    /* here, %1 is set by sc to 1 if the atomic store worked OK */
+    "2:\n"
+    : "=&r"(oldval), "=&r"(result)
+    : "r"(addr), "r"(new_val), "r"(old), "1"(result)
+    : "memory", "cc");
+
+  return result;
 # else
 # error mzrt_cas not defined on this platform
 # endif
