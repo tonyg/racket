@@ -59,7 +59,7 @@
   (define c (car col))
   (define preds (list Var? Pair? Null?))
   (cond [(or-all? preds col) (add1 n)]
-        [(andmap CPat? col) n]
+        ;;[(andmap CPat? col) n]
         [(Var? c)    (count-while Var? col)]
         [(Pair? c)   (count-while Pair? col)]
         [(Vector? c) (count-while Vector? col)]
