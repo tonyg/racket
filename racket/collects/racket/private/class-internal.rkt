@@ -3710,6 +3710,28 @@ An example
 ;;  methods and fields
 ;;--------------------------------------------------------------------
 
+#;(define-syntax send
+  (lambda (stx)
+    (syntax-case stx ()
+      [(_ receiver-stx method arg ...)
+       (let ()
+         (define cached-class-id (syntax-local-lift-expression #'#f))
+         (define cached-method-id (syntax-local-lift-expression #'#f))
+         #`(let* ((receiver receiver-stx)
+                  (receiver-class (object-ref receiver #f)))
+             (if receiver-class
+                 (if (eq? receiver-class #,cached-class-id)
+                     (#,cached-method-id receiver arg ...)
+                     (let ((index (hash-ref (class-method-ht receiver-class) 'method #f)))
+                       (if index
+                           (begin
+                             (set! #,cached-class-id receiver-class)
+                             (set! #,cached-method-id
+                                   (vector-ref (class-methods receiver-class) index))
+                             (#,cached-method-id receiver arg ...))
+                           (error 'pseudo-send "No such method ~a" 'method))))
+                 (underlying-send receiver method arg ...))))])))
+
 (define-syntaxes (send send/apply send/keyword-apply)
   (let ()
     
@@ -3733,12 +3755,30 @@ An example
              (set! let-bindings (cons #`[#,var #,x] let-bindings))]))
         (set! arg-list (reverse arg-list))
         (set! let-bindings (reverse let-bindings))
-        
+        (define cached-class-id (syntax-local-lift-expression #'#f))
+        (define cached-method-id (syntax-local-lift-expression #'#f))
         (syntax-property
          (quasisyntax/loc stx
           (let*-values ([(sym) (quasiquote (unsyntax (localize name)))]
                         [(receiver) (unsyntax obj)]
-                        [(method) (find-method/who '(unsyntax form) receiver sym)])
+                        [(receiver-class) (object-ref receiver #f)]
+                        [(method)
+                         (if receiver-class
+                             (if (eq? receiver-class #,cached-class-id)
+                                 #,cached-method-id
+                                 (let ((index (hash-ref (class-method-ht receiver-class)
+                                                        sym
+                                                        #f)))
+                                   (if index
+                                       (begin
+                                         (set! #,cached-class-id receiver-class)
+                                         (set! #,cached-method-id
+                                               (vector-ref (class-methods receiver-class) index))
+                                         #,cached-method-id)
+                                       (no-such-method '(unsyntax form)
+                                                       sym
+                                                       receiver-class))))
+                             (find-method/who '(unsyntax form) receiver sym))])
             (let (#,@(if kw-args
                          (list #`[kw-arg-tmp #,(cadr kw-args)])
                          (list))
